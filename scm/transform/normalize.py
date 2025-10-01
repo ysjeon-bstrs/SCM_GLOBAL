@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Any, Optional
+import logging
 
 class NormalizationError(Exception):
     """데이터 정규화 에러"""
@@ -101,7 +102,7 @@ def normalize_refined_snapshot(df: pd.DataFrame) -> pd.DataFrame:
         if auto_mapping:
             for new_col, old_col in auto_mapping.items():
                 result[new_col] = result[old_col]
-                st.info(f"자동 매핑: '{old_col}' → '{new_col}'")
+                logging.info(f"자동 매핑: '{old_col}' → '{new_col}'")
         
         # 다시 확인
         missing_cols = [col for col in required_cols if col not in result.columns]

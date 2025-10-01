@@ -5,6 +5,10 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 # 모듈화된 함수들 import
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from scm.config import DEFAULT_CONFIG
 from scm.io.excel import load_from_excel, load_snapshot_from_excel, load_moves_from_excel
 from scm.io.sheets import load_from_gsheet_api, load_snapshot_from_gsheet, load_moves_from_gsheet

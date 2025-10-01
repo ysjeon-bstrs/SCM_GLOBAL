@@ -7,9 +7,19 @@ import plotly.graph_objects as go
 # 모듈화된 함수들 import
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from scm.config import DEFAULT_CONFIG
+# 현재 디렉토리를 Python 경로에 추가
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
+# scm 모듈 import
+try:
+    from scm.config import DEFAULT_CONFIG
+except ImportError as e:
+    st.error(f"모듈 import 오류: {e}")
+    st.info("streamlit_scm_step_v4.py를 사용해주세요.")
+    st.stop()
 from scm.io.excel import load_from_excel, load_snapshot_from_excel, load_moves_from_excel
 from scm.io.sheets import load_from_gsheet_api, load_snapshot_from_gsheet, load_moves_from_gsheet
 from scm.transform.normalize import normalize_refined_snapshot, normalize_moves

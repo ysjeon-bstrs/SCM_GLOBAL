@@ -165,14 +165,16 @@ def normalize_moves(df: pd.DataFrame) -> pd.DataFrame:
     # 컬럼명 정규화
     result.columns = result.columns.astype(str).str.strip()
     
-    # 필수 컬럼 매핑
+    # 필수 컬럼 매핑 (한글 컬럼명 포함)
     column_mapping = {
-        "resource_code": ["resource_code", "sku", "product_code", "item_code", "SKU", "Product Code"],
+        "resource_code": ["resource_code", "sku", "product_code", "item_code", "SKU", "Product Code", "품번"],
         "qty_ea": ["qty_ea", "quantity", "qty", "수량", "Quantity", "Qty"],
+        "from_center": ["from_center", "from_warehouse", "from_location", "출발센터", "출발창고"],
+        "to_center": ["to_center", "to_warehouse", "to_location", "도착센터", "목적창고"],
         "onboard_date": ["onboard_date", "departure_date", "ship_date", "출발일", "Onboard Date"],
         "arrival_date": ["arrival_date", "eta", "expected_arrival", "도착예정일", "Arrival Date"],
-        "inbound_date": ["inbound_date", "received_date", "입고일", "Inbound Date"],
-        "carrier_mode": ["carrier_mode", "transport_mode", "운송수단", "Carrier Mode"]
+        "inbound_date": ["inbound_date", "received_date", "입고일", "입고예정일", "Inbound Date"],
+        "carrier_mode": ["carrier_mode", "transport_mode", "운송수단", "운송사", "Carrier Mode"]
     }
     
     result = coalesce_columns(result, column_mapping)
@@ -204,34 +206,11 @@ def normalize_moves(df: pd.DataFrame) -> pd.DataFrame:
             available_cols = list(result.columns)
             raise NormalizationError(f"필수 컬럼이 없습니다: {missing_cols}\n사용 가능한 컬럼: {available_cols}")
     
-    # 센터별 이동 컬럼 찾기
-    center_mapping = {
-        "태광KR": ["stock2"],
-        "AMZUS": ["fba_available_stock"],
-        "품고KR": ["poomgo_v2_available_stock"],
-        "SBSPH": ["shopee_ph_available_stock"],
-        "SBSSG": ["shopee_sg_available_stock"],
-        "SBSMY": ["shopee_my_available_stock"],
-        "AcrossBUS": ["acrossb_available_stock"],
-        "어크로스비US": ["acrossb_available_stock"]
-    }
-    
-    # 이동 데이터가 있는 센터 찾기
-    available_centers = []
-    for center, possible_cols in center_mapping.items():
-        for col in possible_cols:
-            if col in result.columns:
-                available_centers.append(center)
-                break
-    
-    if not available_centers:
-        # 센터 정보가 없으면 기본값으로 처리
+    # 센터 정보가 이미 있으면 사용, 없으면 기본값 설정
+    if "from_center" not in result.columns:
         result["from_center"] = "Unknown"
+    if "to_center" not in result.columns:
         result["to_center"] = "Unknown"
-    else:
-        # 첫 번째 센터를 기본값으로 설정
-        result["from_center"] = available_centers[0]
-        result["to_center"] = available_centers[0]
     
     # 데이터 타입 변환
     result["qty_ea"] = pd.to_numeric(result["qty_ea"], errors="coerce").fillna(0).astype(int)

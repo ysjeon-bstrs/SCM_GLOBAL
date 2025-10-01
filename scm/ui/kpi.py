@@ -34,10 +34,15 @@ def render_kpis(
     in_transit_mask = (
         (moves["carrier_mode"] != "WIP") &
         (moves["to_center"].isin(centers_sel)) &
-        (moves["resource_code"].isin(skus_sel)) &
-        (moves["onboard_date"].notna()) &
-        (moves["onboard_date"] <= today)
+        (moves["resource_code"].isin(skus_sel))
     )
+    
+    # onboard_date 컬럼이 있으면 추가 조건 적용
+    if "onboard_date" in moves.columns:
+        in_transit_mask = in_transit_mask & (
+            (moves["onboard_date"].notna()) &
+            (moves["onboard_date"] <= today)
+        )
     
     # 예측 입고일 계산
     moves_copy = moves.copy()
@@ -124,14 +129,21 @@ def render_center_kpis(
                 (snap_long["resource_code"].isin(skus_sel))
             ]["stock_qty"].sum()
             
-            # 센터별 이동중 재고
-            center_in_transit = moves[
-                (moves["to_center"] == center) &
-                (moves["resource_code"].isin(skus_sel)) &
-                (moves["onboard_date"].notna()) &
-                (moves["onboard_date"] <= today) &
-                (moves["inbound_date"].isna())
-            ]["qty_ea"].sum()
+    # 센터별 이동중 재고
+    center_in_transit_mask = (
+        (moves["to_center"] == center) &
+        (moves["resource_code"].isin(skus_sel)) &
+        (moves["inbound_date"].isna())
+    )
+    
+    # onboard_date 컬럼이 있으면 추가 조건 적용
+    if "onboard_date" in moves.columns:
+        center_in_transit_mask = center_in_transit_mask & (
+            (moves["onboard_date"].notna()) &
+            (moves["onboard_date"] <= today)
+        )
+    
+    center_in_transit = moves[center_in_transit_mask]["qty_ea"].sum()
             
             col1, col2 = st.columns(2)
             with col1:
@@ -179,13 +191,20 @@ def render_sku_kpis(
                 st.metric("재고", f"{int(stock):,}")
             with col3:
                 # SKU별 이동중 재고
-                sku_in_transit = moves[
+                sku_in_transit_mask = (
                     (moves["resource_code"] == sku) &
                     (moves["to_center"].isin(centers_sel)) &
-                    (moves["onboard_date"].notna()) &
-                    (moves["onboard_date"] <= today) &
                     (moves["inbound_date"].isna())
-                ]["qty_ea"].sum()
+                )
+                
+                # onboard_date 컬럼이 있으면 추가 조건 적용
+                if "onboard_date" in moves.columns:
+                    sku_in_transit_mask = sku_in_transit_mask & (
+                        (moves["onboard_date"].notna()) &
+                        (moves["onboard_date"] <= today)
+                    )
+                
+                sku_in_transit = moves[sku_in_transit_mask]["qty_ea"].sum()
                 st.metric("이동중", f"{int(sku_in_transit):,}")
     else:
         st.info("선택된 조건에 해당하는 SKU가 없습니다.")
